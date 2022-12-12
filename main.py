@@ -13,10 +13,13 @@ import torch
 import torch.nn as nn
 import logging
 logging.basicConfig(stream = sys.stdout, level = logging.INFO)
+
+# Imports from utils directory
 from utils.parser import parse_args
 from utils.metrics import MAE, RMSE, ndcg_at_k, recall_at_k, hit_at_k, precision_at_k
 from utils.dataloader_steam import Dataloader_steam
 from utils.dataloader_item_graph import Dataloader_item_graph
+
 from models.RGCNModel_steam_rank import RGCNModel_steam_rank
 from models.Predictor import HeteroDotProductPredictor
 from models.model import Proposed_model
@@ -78,6 +81,7 @@ if __name__ == '__main__':
     else:
         device = 'cpu'
 
+    # TODO: Change path to current directory
     path = '/home/yangliangwei/datasets/steam/'
 
     user_id_path = path + '/users.txt'

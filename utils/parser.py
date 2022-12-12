@@ -1,5 +1,9 @@
 import argparse
 
+"""
+    Argparser allows user to pass in parameters from command line. If no parameter is passed from cmd, default value is used.
+    Can access arguments passed as args.argname or args[argname]
+"""
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', default = 'Ciao', type = str,
@@ -24,10 +28,12 @@ def parse_args():
                         help = '-1 for cpu, 0 for gpu:0')
     parser.add_argument('--k', default = [5, 10, 20], type = list,
                         help = 'negative sampler number for each node')
+    # TODO: Determine either w_context or w_self
     parser.add_argument('--g', default = 0.1, type = float,
                         help = 'hyper-parameter for aggregation weight')
     parser.add_argument('--social_g', default = 0.1, type = float,
-                        help = 'hyper-parameter for aggregation weight')
+                        help = 'hyper-parameter for social aggregation weight')
+    # TODO: Determine either w_context or w_self
     parser.add_argument('--item_g', default = 0.1, type = float,
                         help = 'hyper-parameter for aggregation weight')
 

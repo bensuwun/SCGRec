@@ -1,14 +1,16 @@
 import torch.nn as nn
 from tqdm import tqdm
+# Python debugger
 import pdb
 import torch.nn.functional as F
 import torch
-from dgl.nn import SAGEConv
+# Deep graph library
 import dgl
 import dgl.function as fn
 import dgl.nn as dglnn
 from dgl.nn import GATConv
 from dgl.nn import GraphConv
+from dgl.nn import SAGEConv
 
 class Proposed_model(nn.Module):
     def __init__(self, args, graph, item_graph):
@@ -23,7 +25,9 @@ class Proposed_model(nn.Module):
         self.user_embedding = torch.nn.Parameter(torch.load('./baselines/user_embedding.pt'))
         self.item_embedding = torch.nn.Parameter(torch.load('./baselines/item_embedding.pt'))
 
+        # Game Context Graph
         self.item_conv = SAGEConv(self.hid_dim, self.hid_dim, 'mean')
+        # Social Graph with Attention
         self.social_GAT = GATConv(self.hid_dim, self.hid_dim, num_heads = 1, allow_zero_in_degree = True)
         self.social_conv = SAGEConv(self.hid_dim, self.hid_dim, 'mean')
         self.linear = torch.nn.Linear(3 * self.hid_dim, self.hid_dim)

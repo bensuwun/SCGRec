@@ -14,7 +14,7 @@ from dgl.data import DGLDataset
 import pandas as pd
 from sklearn import preprocessing
 
-class Dataloader_steam_filtered(DGLDataset):
+class Dataloader_steam(DGLDataset):
     def __init__(self, args, root_path, user_id_path, app_id_path, app_info_path, friends_path, developer_path, publisher_path, genres_path, device = 'cpu', name = 'steam'):
         logging.info("steam dataloader init")
 
@@ -45,6 +45,7 @@ class Dataloader_steam_filtered(DGLDataset):
         logging.info("build test data")
         self.test_data = self.build_valid_data(self.test_path)
 
+        # If preprocessed graphs exist, load those (currently none)
         if os.path.exists(self.graph_path):
             logging.info("loading preprocessed data")
             self.graph = dgl.load_graphs(self.graph_path)
@@ -59,6 +60,12 @@ class Dataloader_steam_filtered(DGLDataset):
         self.dataloader = self.build_dataloader(self.args, self.graph)
 
     def build_valid_data(self, path):
+        """
+            Used for reading and building the validation and test sets (both text files have similar structure).
+            Example return value: {'1234': [23, 42, 52]} 
+
+            :return: Dictionary where keys = mapped user IDs, values = list of mapped game IDs/dwelling time owned by user.
+        """
         users = {}
         with open(path, 'r') as f:
             lines = f.readlines()
@@ -235,7 +242,14 @@ class Dataloader_steam_filtered(DGLDataset):
         ls = self.generate_percentile(ls)
         return torch.tensor(ls)
 
+    
     def read_id_mapping(self, path):
+        """
+            Used for reading the app_id.txt and users.txt, both of which contain a list of IDs in single-data format.
+            Sample result: {'273813': 0, '2312515': 1}
+
+            :return: Dictionary, key = ID, value = mapped ID
+        """
         mapping = {}
         count = 0
         with open(path, 'r') as f:
