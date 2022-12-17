@@ -27,7 +27,7 @@ class Proposed_model(nn.Module):
 
         # Game Context Graph
         self.item_conv = SAGEConv(self.hid_dim, self.hid_dim, 'mean')
-        # Social Graph with Attention
+        # Social Graph with Attention, aggregate with SAGEConv
         self.social_GAT = GATConv(self.hid_dim, self.hid_dim, num_heads = 1, allow_zero_in_degree = True)
         self.social_conv = SAGEConv(self.hid_dim, self.hid_dim, 'mean')
         self.linear = torch.nn.Linear(3 * self.hid_dim, self.hid_dim)
@@ -35,11 +35,14 @@ class Proposed_model(nn.Module):
         self.build_model(item_graph)
 
     def build_layer(self, idx, graph):
+        # Input layer, get dimension of input
         if idx == 0:
             input_dim = graph.ndata['h'].shape[1]
+        # Get predefined hidden dimension
         else:
             input_dim = self.hid_dim
         dic = {
+            # Input dim, output dim
             rel: GraphConv(input_dim, self.hid_dim, weight = True, bias = False)
             for rel in graph.etypes
         }

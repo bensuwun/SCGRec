@@ -28,7 +28,7 @@ class Dataloader_steam(DGLDataset):
         self.publisher_path = publisher_path
         self.genres_path = genres_path
         self.device = device
-        self.graph_path = self.root_path + '/graph.bin'
+        self.graph_path = self.root_path + '/graph.bin'     # graph.bin derived from dgl.save_graphs(...)
         self.game_path = self.root_path + '/train_game.txt'
         self.time_path = self.root_path + '/train_time.txt'
         self.valid_path = self.root_path + '/valid_game.txt'
@@ -64,7 +64,7 @@ class Dataloader_steam(DGLDataset):
             Used for reading and building the validation and test sets (both text files have similar structure).
             Example return value: {'1234': [23, 42, 52]} 
 
-            :return: Dictionary where keys = mapped user IDs, values = list of mapped game IDs/dwelling time owned by user.
+            :return: Dictionary where keys = mapped user IDs, values = list of mapped game IDs or dwelling time owned by user.
         """
         users = {}
         with open(path, 'r') as f:
@@ -107,6 +107,7 @@ class Dataloader_steam(DGLDataset):
         self.friends = self.read_friends(self.friends_path)
 
         graph_data = {
+            #   (Source Node Type | Edge Type | Destination Node Type)
             ('user', 'friend of', 'user'): (self.friends[:, 0], self.friends[:, 1]),
 
             ('game', 'developed by', 'developer'): (torch.tensor(list(self.developer.keys())), torch.tensor(list(self.developer.values()))),
@@ -152,8 +153,11 @@ class Dataloader_steam(DGLDataset):
         logging.info("total game number is {}, games without features number is {}".format(count_total,count_without_feature ))
 
         graph.nodes['game'].data['h'] = torch.tensor(np.vstack(ls_feature))
+        # Add dwelling time to edges with type "play" and "played by"
         graph.edges['play'].data['time'] = self.user_game[:, 2]
         graph.edges['played by'].data['time'] = self.user_game[:, 2]
+
+        # Add percentile to edges
         graph.edges['play'].data['percentile'] = self.user_game[:, 3]
         graph.edges['played by'].data['percentile'] = self.user_game[:, 3]
         self.graph = graph
@@ -261,22 +265,35 @@ class Dataloader_steam(DGLDataset):
         return mapping
 
     def read_app_info(self, path):
+        """
+            Reads the appInfo txt file. Performs one hot encoding on the Type column, 
+            replaces unrated metacritic scores with the global mean, and normalized certain columns.
+
+            :return: Dictionary, keys = mapped App IDs, values = numpy arrays containing _____ <not sure which columns are being returned>
+        """
         dic = {}
         df = pd.read_csv(path, header = None)
+
+        # Do OneHotEncoding on Type column (e.g. game, dlc, mod)
         df = pd.get_dummies(df, columns = [2])
+
         df_time = pd.to_datetime(df.iloc[:, 3])
         date_end = pd.to_datetime('2013-06-25')
         time_sub = date_end - df_time
         time_sub = time_sub.dt.days
         df = pd.concat([df, time_sub], axis = 1)
+
         column_num = len(df.columns)
         column_index = [2]
         column_index.extend([i for i in range(4, column_num)])
 
         logging.info("begin feature engineering")
+        # Replace no metacritic scores from NaN to the mean of all metacritic scores
         df.iloc[:, 4].replace(to_replace = -1, value = np.nan, inplace = True)
         mean = df.iloc[:, 4].mean()
         df.iloc[:, 4].replace(to_replace = np.nan, value = mean, inplace = True)
+
+        # TODO: Determine which columns are being normalized
         columns_norm = [2, 4, 5, 11]
         mean = df.iloc[:, columns_norm].mean()
         std = df.iloc[:, columns_norm].std()
@@ -299,10 +316,17 @@ class Dataloader_steam(DGLDataset):
         return torch.tensor(ls)
 
     def read_mapping(self, path):
+        """
+            Used to read the Developers, Genres, and Publishers txt files.
+            Sample return value: 
+
+            :return: Dictionary, where keys = mapped AppIDs, values = Developer/Genre/Publisher
+        """
         mapping = {}
         with open(path, 'r') as f:
             for line in f:
                 line = line.strip().split(',')
+                # If app ID not yet in mapping
                 if line[0] not in mapping:
                     if line[1] != '':
                         mapping[self.app_id_mapping[line[0]]] = line[1]

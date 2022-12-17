@@ -16,13 +16,14 @@ logging.basicConfig(stream = sys.stdout, level = logging.INFO)
 
 # Imports from utils directory
 from utils.parser import parse_args
-from utils.metrics import MAE, RMSE, ndcg_at_k, recall_at_k, hit_at_k, precision_at_k
 from utils.dataloader_steam import Dataloader_steam
 from utils.dataloader_item_graph import Dataloader_item_graph
 
 from models.RGCNModel_steam_rank import RGCNModel_steam_rank
 from models.Predictor import HeteroDotProductPredictor
 from models.model import Proposed_model
+
+from utils.metrics import MAE, RMSE, ndcg_at_k, recall_at_k, hit_at_k, precision_at_k
 
 def validate(train_mask, dic, h, ls_k):
     users = torch.tensor(list(dic.keys())).long()
@@ -81,8 +82,8 @@ if __name__ == '__main__':
     else:
         device = 'cpu'
 
-    # TODO: Change path to current directory
-    path = '/home/yangliangwei/datasets/steam/'
+    # TODO: Change path to steam_data folder's directory
+    path = '../../Desktop/steam_data'
 
     user_id_path = path + '/users.txt'
     app_id_path = path + '/app_id.txt'
@@ -92,9 +93,11 @@ if __name__ == '__main__':
     publisher_path = path + '/Games_Publishers.txt'
     genres_path = path + '/Games_Genres.txt'
 
+    # Build user-item and user-user heterogeneous
     DataLoader = Dataloader_steam(args, path, user_id_path, app_id_path, app_info_path, friends_path, developer_path, publisher_path, genres_path)
 
     graph = DataLoader.graph
+    # Build item-item heterogeneous graph
     DataLoader_item = Dataloader_item_graph(graph, app_id_path, publisher_path, developer_path, genres_path)
 
     graph_item = DataLoader_item.graph
